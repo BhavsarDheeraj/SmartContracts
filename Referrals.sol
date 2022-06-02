@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract Referrals {
+contract ReferralSystem {
     // a => b i.e. a was referred by b
     mapping (string => string) refs;
     // a => b i.e. list of all referrals by a
@@ -19,6 +19,14 @@ contract Referrals {
 
     function getReferralsCount(string calldata _refereeId) public view returns(uint) {
         return referralIds[_refereeId].length;
+    }
+
+    function getReferrals(string calldata _refereeId) public view returns(string[] memory) {
+        return referralIds[_refereeId];
+    }
+
+    function getReferee(string calldata _referredId) public view returns(string memory) {
+        return refs[_referredId];
     }
 
     function contains(string calldata _id) private view returns(bool) {
