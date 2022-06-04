@@ -7,19 +7,21 @@ pragma solidity ^0.8.0;
 
 import "./PriceConverter.sol";
 
+error NotOwner();
+
 // Only works with Rinkeby Testnet
 contract FundMe {
     using PriceConverter for uint256;
 
-    uint256 public minimumUSD = 50 * 1e18;
+    uint256 public constant MINIMUM_USD = 50 * 1e18;
 
     address[] public funders;
     mapping(address => uint256) public addressToAmountFunded;
 
-    address public owner;
+    address public immutable i_owner;
 
     constructor() {
-        owner = msg.sender;
+        i_owner = msg.sender;
     }
 
     // Just like wallet holds funds, the contracts can also hold funds
@@ -31,7 +33,7 @@ contract FundMe {
         // if the first expression is false in require, then it reverts
         // revert means undo any actions before and send the remaining gas back
         // require(getConversionRate(msg.value) >= minimumUSD, "Didn't send enough funds..."); // 1e18 = 1 * 10 ** 18 = 1000000000000000000
-        require(msg.value.getConversionRate() >= minimumUSD, "Didn't send enough funds..."); // 1e18 = 1 * 10 ** 18 = 1000000000000000000
+        require(msg.value.getConversionRate() >= MINIMUM_USD, "Didn't send enough funds..."); // 1e18 = 1 * 10 ** 18 = 1000000000000000000
         // msg.sender gives the address of the caller
         funders.push(msg.sender);
         addressToAmountFunded[msg.sender] += msg.value;
@@ -61,8 +63,35 @@ contract FundMe {
     }
 
     modifier onlyOwner() {
-        require(msg.sender == owner, "Sender is not owner!");
+        // require(msg.sender == owner, "Sender is not owner!");
+        if (msg.sender != i_owner) { revert NotOwner(); }
         _;
+    }
+
+    // what happens if someone sends ETH to this contract without calling fund function
+
+    // receive
+    // receive is called when someone calls the contract with ETH without any data
+    receive() external payable {
+        fund();
+    }
+
+    // fallback
+    // fallback is called when someone calls the contract with ETH and with or without any data
+    // fallback is also called if there's no receive function defined
+    // Explainer from: https://solidity-by-example.org/fallback/
+    // Ether is sent to contract
+    //      is msg.data empty?
+    //          /   \ 
+    //         yes  no
+    //         /     \
+    //    receive()?  fallback() 
+    //     /   \ 
+    //   yes   no
+    //  /        \
+    //receive()  fallback()
+    fallback() external payable {
+        fund();
     }
 
 }
